@@ -19,10 +19,7 @@ export default function Home() {
   const { selectedPost, selectPost } = useSelectedPost<Post>();
 
 
-  const methods = useForm<{
-    title: string;
-    body: string;
-  }>();
+  const methods = useForm<Post>();
 
   async function getData(): Promise<Post[]> {
     const response = await axios.get(
@@ -41,12 +38,13 @@ export default function Home() {
     selectPost(post);
     methods.reset({
       title: post.title.split(" ").slice(0, 2).join(" "), // First two words of the title
-      body: post.body.split(" ").slice(0, 2).join(" "), // First two words of the body
+      body: post.body.split(" ").slice(0, 2).join(" "),
+      userId: post.id// First two words of the body
     });
     openModal();
   };
 
-  const onSubmit = (formData: { title: string; body: string }) => {
+  const onSubmit = (formData: Post) => {
     if (selectedPost) {
       // Create an updated post object
       const updatedPost = {
@@ -54,6 +52,7 @@ export default function Home() {
         title: formData.title,
         body: formData.body,
       };
+    return updatedPost
      
     }
   };
@@ -111,6 +110,8 @@ export default function Home() {
 
               <Inputs name="title" title="Title:"/>
               <Inputs name="body" title="body:"/>
+              <Inputs name="userId" title="id::"/>
+
 
               <div className="flex justify-between">
                 <button
