@@ -1,8 +1,10 @@
+import Inputs from "@/components/Inputs";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useMutation } from "react-query";
+import { FormProvider, useForm } from "react-hook-form";
+import useModal from "../../hooks/usePopUp";
+import useSelectedPost from "../../hooks/useSelectedPost";
 
 export default function Home() {
   interface Post {
@@ -12,9 +14,12 @@ export default function Home() {
     userId: number;
   }
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const { register, handleSubmit, reset } = useForm<{
+  const { isModalOpen, openModal, closeModal } = useModal();
+  
+  const { selectedPost, selectPost } = useSelectedPost<Post>();
+
+
+  const methods = useForm<{
     title: string;
     body: string;
   }>();
@@ -26,32 +31,19 @@ export default function Home() {
     return response.data;
   }
 
-  const { data, refetch } = useQuery({
+  const { data } = useQuery({
     queryKey: ["login"],
     queryFn: getData,
   });
- async function putData(updatedPost: Post){
-  let putResponse = await axios.put(`https://jsonplaceholder.typicode.com/posts/${1}`, updatedPost); 
-  return putResponse.data
-  }
-
-const {mutate} = useMutation({
-  mutationFn: putData,
-  mutationKey: ["post", "add"],
-  onSuccess: () => {
-    refetch(); // Refetch the data after the mutation succeeds
-    setIsModalOpen(false); // Close the modal
-  },
  
-});
 
   const handleEditClick = (post: Post) => {
-    setSelectedPost(post);
-    reset({
+    selectPost(post);
+    methods.reset({
       title: post.title.split(" ").slice(0, 2).join(" "), // First two words of the title
       body: post.body.split(" ").slice(0, 2).join(" "), // First two words of the body
     });
-    setIsModalOpen(true);
+    openModal();
   };
 
   const onSubmit = (formData: { title: string; body: string }) => {
@@ -62,11 +54,11 @@ const {mutate} = useMutation({
         title: formData.title,
         body: formData.body,
       };
-      mutate(updatedPost); // Trigger the mutation
+     
     }
   };
   const handleCancel = () => {
-    setIsModalOpen(false);
+    closeModal();
   };
 
   return (
@@ -108,27 +100,17 @@ const {mutate} = useMutation({
 
       {/* Modal */}
       {isModalOpen && (
+        <FormProvider {...methods}>
+          
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+
           <div className="bg-white rounded-lg p-4 w-1/3">
             <h2 className="text-lg font-bold mb-4 text-zinc-900">Edit Post</h2>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <div className="mb-4">
-                <label className="text-zinc-900 block mb-2">Title:</label>
-                <input
-                  {...register("title", { required: true })}
-                  type="text"
-                  className="border text-zinc-900 border-gray-300 rounded p-2 w-full"
-                />
-              </div>
+            <form onSubmit={methods.handleSubmit(onSubmit)}>
 
-              <div className="mb-4">
-                <label className="text-zinc-900 block mb-2 ">Body:</label>
-                <input
-                  {...register("body", { required: true })}
-                  type="text"
-                  className="border text-zinc-900 border-gray-300 rounded p-2 w-full"
-                />
-              </div>
+
+              <Inputs name="title" title="Title:"/>
+              <Inputs name="body" title="body:"/>
 
               <div className="flex justify-between">
                 <button
@@ -147,8 +129,12 @@ const {mutate} = useMutation({
               </div>
             </form>
           </div>
+
         </div>
+         </FormProvider>
+
       )}
     </div>
+    
   );
 }
